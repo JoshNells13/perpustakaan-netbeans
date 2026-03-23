@@ -1,0 +1,132 @@
+-- ==============================================
+-- Database: db_perpustakaan
+-- ==============================================
+CREATE DATABASE IF NOT EXISTS db_perpustakaan;
+USE db_perpustakaan;
+
+-- ==============================================
+-- Table: anggota
+-- ==============================================
+CREATE TABLE anggota (
+    id_anggota INT PRIMARY KEY AUTO_INCREMENT,
+    nis VARCHAR(20) UNIQUE NOT NULL,
+    nama_lengkap VARCHAR(100) NOT NULL,
+    kelas VARCHAR(10),
+    jenis_kelamin ENUM('L', 'P'),
+    alamat TEXT,
+    no_telepon VARCHAR(15),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'user') DEFAULT 'user',
+    tanggal_daftar TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status_aktif BOOLEAN DEFAULT TRUE
+);
+
+-- ==============================================
+-- Table: buku
+-- ==============================================
+CREATE TABLE buku (
+    id_buku INT PRIMARY KEY AUTO_INCREMENT,
+    kode_buku VARCHAR(20) UNIQUE NOT NULL,
+    judul_buku VARCHAR(200) NOT NULL,
+    pengarang VARCHAR(100),
+    penerbit VARCHAR(100),
+    tahun_terbit YEAR,
+    isbn VARCHAR(20),
+    kategori VARCHAR(50),
+    jumlah_tersedia INT DEFAULT 0,
+    jumlah_total INT DEFAULT 0,
+    letak_rak VARCHAR(50),
+    deskripsi TEXT,
+    tanggal_masuk DATE,
+    status_buku ENUM('tersedia', 'dipinjam', 'rusak', 'hilang') DEFAULT 'tersedia'
+);
+
+-- ==============================================
+-- Table: peminjaman
+-- ==============================================
+CREATE TABLE peminjaman (
+    id_peminjaman INT PRIMARY KEY AUTO_INCREMENT,
+    no_peminjaman VARCHAR(20) UNIQUE NOT NULL,
+    id_anggota INT NOT NULL,
+    tanggal_pinjam DATE NOT NULL,
+    tanggal_jatuh_tempo DATE NOT NULL,
+    status_peminjaman ENUM('dipinjam', 'dikembalikan', 'terlambat') DEFAULT 'dipinjam',
+    keterangan TEXT,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_anggota) REFERENCES anggota(id_anggota),
+    FOREIGN KEY (created_by) REFERENCES anggota(id_anggota)
+);
+
+-- ==============================================
+-- Table: detail_peminjaman
+-- ==============================================
+CREATE TABLE detail_peminjaman (
+    id_detail INT PRIMARY KEY AUTO_INCREMENT,
+    id_peminjaman INT NOT NULL,
+    id_buku INT NOT NULL,
+    status_kembali BOOLEAN DEFAULT FALSE,
+    tanggal_kembali DATE,
+    denda DECIMAL(10,2) DEFAULT 0,
+    FOREIGN KEY (id_peminjaman) REFERENCES peminjaman(id_peminjaman) ON DELETE CASCADE,
+    FOREIGN KEY (id_buku) REFERENCES buku(id_buku)
+);
+
+-- ==============================================
+-- Table: pengembalian
+-- ==============================================
+CREATE TABLE pengembalian (
+    id_pengembalian INT PRIMARY KEY AUTO_INCREMENT,
+    no_pengembalian VARCHAR(20) UNIQUE NOT NULL,
+    id_peminjaman INT NOT NULL,
+    id_anggota INT NOT NULL,
+    tanggal_pengembalian DATE NOT NULL,
+    total_denda DECIMAL(10,2) DEFAULT 0,
+    keterangan TEXT,
+    diterima_oleh INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_peminjaman) REFERENCES peminjaman(id_peminjaman),
+    FOREIGN KEY (id_anggota) REFERENCES anggota(id_anggota),
+    FOREIGN KEY (diterima_oleh) REFERENCES anggota(id_anggota)
+);
+
+-- ==============================================
+-- Insert Data Contoh
+-- ==============================================
+
+-- Insert admin
+INSERT INTO anggota (nis, nama_lengkap, kelas, jenis_kelamin, username, password, role) VALUES
+('ADMIN001', 'Administrator', 'STAFF', 'L', 'admin', MD5('admin123'), 'admin');
+
+-- Insert anggota/siswa
+INSERT INTO anggota (nis, nama_lengkap, kelas, jenis_kelamin, alamat, no_telepon, username, password) VALUES
+('2024001', 'Budi Santoso', 'XII-RPL', 'L', 'Jl. Merdeka No. 1', '081234567890', 'budi', MD5('budi123')),
+('2024002', 'Ani Wijaya', 'XII-RPL', 'P', 'Jl. Sudirman No. 2', '081234567891', 'ani', MD5('ani123')),
+('2024003', 'Citra Dewi', 'XI-MM', 'P', 'Jl. Ahmad Yani No. 3', '081234567892', 'citra', MD5('citra123'));
+
+-- Insert data buku
+INSERT INTO buku (kode_buku, judul_buku, pengarang, penerbit, tahun_terbit, isbn, kategori, jumlah_tersedia, jumlah_total, letak_rak, deskripsi, tanggal_masuk) VALUES
+('BK001', 'Pemrograman Java untuk Pemula', 'Andi Prasetyo', 'Informatika', 2023, '978-602-1234-01', 'Pemrograman', 5, 5, 'RAK A1', 'Buku dasar pemrograman Java', '2024-01-10'),
+('BK002', 'Belajar MySQL dan Database', 'Budi Raharjo', 'Andi Offset', 2023, '978-602-1234-02', 'Database', 3, 5, 'RAK A2', 'Panduan lengkap MySQL', '2024-01-10'),
+('BK003', 'Pemrograman Web dengan Java', 'Citra Lestari', 'Elex Media', 2024, '978-602-1234-03', 'Pemrograman', 2, 3, 'RAK A1', 'Pengembangan web menggunakan Java', '2024-02-15'),
+('BK004', 'Algoritma dan Struktur Data', 'Dian Kurniawan', 'Gramedia', 2023, '978-602-1234-04', 'Algoritma', 4, 4, 'RAK B1', 'Dasar algoritma pemrograman', '2024-01-20'),
+('BK005', 'Framework Java Spring Boot', 'Eko Prasetyo', 'Informatika', 2024, '978-602-1234-05', 'Framework', 3, 3, 'RAK A3', 'Pengembangan aplikasi dengan Spring', '2024-03-01');
+
+-- Insert peminjaman contoh
+INSERT INTO peminjaman (no_peminjaman, id_anggota, tanggal_pinjam, tanggal_jatuh_tempo, status_peminjaman, created_by) VALUES
+('PJ240301', 2, '2024-03-01', '2024-03-08', 'dikembalikan', 1),
+('PJ240302', 3, '2024-03-05', '2024-03-12', 'dipinjam', 1),
+('PJ240303', 4, '2024-03-10', '2024-03-17', 'dipinjam', 1);
+
+-- Insert detail peminjaman
+INSERT INTO detail_peminjaman (id_peminjaman, id_buku, status_kembali, tanggal_kembali) VALUES
+(1, 1, TRUE, '2024-03-07'),
+(1, 2, TRUE, '2024-03-07'),
+(2, 3, FALSE, NULL),
+(2, 4, FALSE, NULL),
+(3, 5, FALSE, NULL);
+
+-- Insert pengembalian
+INSERT INTO pengembalian (no_pengembalian, id_peminjaman, id_anggota, tanggal_pengembalian, total_denda, diterima_oleh) VALUES
+('PG240301', 1, 2, '2024-03-07', 0, 1);
